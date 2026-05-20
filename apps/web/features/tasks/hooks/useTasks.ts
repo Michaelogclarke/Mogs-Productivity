@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import type { Task, CreateTaskInput } from '../types';
 
 type TaskView = 'today' | 'upcoming' | 'overdue' | 'all' | 'completed';
@@ -65,7 +66,39 @@ export function useTaskMutations() {
       }
       return (await res.json()).task as Task;
     },
-    onSuccess: invalidate,
+    onMutate: async (input) => {
+      await qc.cancelQueries({ queryKey: ['tasks'] });
+      const snapshot = qc.getQueriesData<Task[]>({ queryKey: ['tasks'] });
+      const optimistic: Task = {
+        id: `optimistic-${Date.now()}`,
+        userId: '',
+        projectId: input.projectId ?? null,
+        areaId: input.areaId ?? null,
+        title: input.title,
+        description: input.description ?? null,
+        status: 'todo',
+        priority: input.priority ?? 'none',
+        dueDate: input.dueDate ?? null,
+        scheduledFor: input.scheduledFor ?? null,
+        reminderAt: input.reminderAt ?? null,
+        completedAt: null,
+        archivedAt: null,
+        rawInput: input.rawInput ?? null,
+        parsedMetadata: input.parsedMetadata ?? null,
+        sortOrder: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      qc.setQueriesData<Task[]>({ queryKey: ['tasks'] }, (old) =>
+        old ? [optimistic, ...old] : [optimistic],
+      );
+      return { snapshot };
+    },
+    onError: (e, _input, ctx) => {
+      if (ctx?.snapshot) ctx.snapshot.forEach(([key, data]) => qc.setQueryData(key, data));
+      toast.error(e.message);
+    },
+    onSettled: () => { invalidate(); toast.success('Task created'); },
   });
 
   const completeTask = useMutation({
@@ -82,10 +115,9 @@ export function useTaskMutations() {
       );
       return { snapshot };
     },
-    onError: (_err, _taskId, ctx) => {
-      if (ctx?.snapshot) {
-        ctx.snapshot.forEach(([key, data]) => qc.setQueryData(key, data));
-      }
+    onError: (e, _taskId, ctx) => {
+      if (ctx?.snapshot) ctx.snapshot.forEach(([key, data]) => qc.setQueryData(key, data));
+      toast.error(e.message);
     },
     onSettled: invalidate,
   });
@@ -97,6 +129,7 @@ export function useTaskMutations() {
       return (await res.json()).task as Task;
     },
     onSuccess: invalidate,
+    onError: (e) => toast.error(e.message),
   });
 
   const archiveTask = useMutation({
@@ -113,10 +146,9 @@ export function useTaskMutations() {
       );
       return { snapshot };
     },
-    onError: (_err, _taskId, ctx) => {
-      if (ctx?.snapshot) {
-        ctx.snapshot.forEach(([key, data]) => qc.setQueryData(key, data));
-      }
+    onError: (e, _taskId, ctx) => {
+      if (ctx?.snapshot) ctx.snapshot.forEach(([key, data]) => qc.setQueryData(key, data));
+      toast.error(e.message);
     },
     onSettled: invalidate,
   });
@@ -128,10 +160,14 @@ export function useTaskMutations() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(patch),
       });
-      if (!res.ok) throw new Error('Failed to update task');
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error ?? 'Failed to update task');
+      }
       return (await res.json()).task as Task;
     },
-    onSuccess: invalidate,
+    onSuccess: () => { invalidate(); toast.success('Task updated'); },
+    onError: (e) => toast.error(e.message),
   });
 
   return { createTask, completeTask, reopenTask, archiveTask, updateTask };
