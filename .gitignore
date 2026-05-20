@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Environment files — never commit secrets
+.env
+.env.local
+.env.*.local
+# Allow example templates
+!.env.example
+!.env.local.example
+!.env.*.example
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+
+# Package manager
+.pnpm-debug.log*
+pnpm-lock.yaml.bak
+
+# Misc
+.DS_Store
+*.pem
+*.tsbuildinfo
+
+# Vercel
+.vercel
+
+# Editor
+.idea/
+.vscode/
