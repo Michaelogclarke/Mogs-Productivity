@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CalendarDays, CheckSquare, Clock, Inbox, List, AlertTriangle, Plus, X, FolderOpen, Layers } from 'lucide-react';
+import { CalendarDays, CheckSquare, Clock, Inbox, List, AlertTriangle, Plus, X, FolderOpen, Layers, BookOpen, LayoutTemplate } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTaskUIStore } from '@/stores/taskUIStore';
@@ -118,6 +118,51 @@ export function Sidebar() {
           <Inbox className="h-4 w-4 shrink-0" />
           Inbox
         </Link>
+      </div>
+
+      {/* Notes */}
+      <div className="mt-1 px-2">
+        <div className="flex items-center justify-between px-3 mb-0.5">
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Notes</span>
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <Link
+            href="/notes"
+            className={cn(
+              'flex w-full items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors',
+              pathname === '/notes'
+                ? 'bg-accent text-accent-foreground font-medium'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+            )}
+          >
+            <BookOpen className="h-4 w-4 shrink-0" />
+            All Notes
+          </Link>
+          <Link
+            href={`/notes/daily/${new Date().toISOString().slice(0, 10)}`}
+            className={cn(
+              'flex w-full items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors',
+              pathname.startsWith('/notes/daily')
+                ? 'bg-accent text-accent-foreground font-medium'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+            )}
+          >
+            <CalendarDays className="h-4 w-4 shrink-0" />
+            Daily Notes
+          </Link>
+          <Link
+            href="/notes/templates"
+            className={cn(
+              'flex w-full items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors',
+              pathname === '/notes/templates'
+                ? 'bg-accent text-accent-foreground font-medium'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+            )}
+          >
+            <LayoutTemplate className="h-4 w-4 shrink-0" />
+            Templates
+          </Link>
+        </div>
       </div>
 
       {/* Areas */}

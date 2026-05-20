@@ -6,6 +6,7 @@ import {
   boolean,
   integer,
   jsonb,
+  date,
   primaryKey,
   unique,
 } from 'drizzle-orm/pg-core';
@@ -139,6 +140,80 @@ export const inboxItems = pgTable('inbox_items', {
 });
 
 // ---------------------------------------------------------------------------
+// Notes
+// ---------------------------------------------------------------------------
+export const notes = pgTable('notes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
+  areaId: uuid('area_id').references(() => areas.id, { onDelete: 'set null' }),
+  title: text('title').notNull(),
+  slug: text('slug'),
+  content: text('content').notNull().default(''),
+  type: text('type').notNull().default('normal'),
+  noteDate: date('note_date'),
+  excerpt: text('excerpt'),
+  wordCount: integer('word_count').notNull().default(0),
+  readingTimeMinutes: integer('reading_time_minutes').notNull().default(0),
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ---------------------------------------------------------------------------
+// Note Links (wiki links)
+// ---------------------------------------------------------------------------
+export const noteLinks = pgTable('note_links', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  sourceNoteId: uuid('source_note_id')
+    .notNull()
+    .references(() => notes.id, { onDelete: 'cascade' }),
+  targetNoteId: uuid('target_note_id').references(() => notes.id, { onDelete: 'set null' }),
+  linkText: text('link_text').notNull(),
+  resolved: boolean('resolved').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ---------------------------------------------------------------------------
+// Note Templates
+// ---------------------------------------------------------------------------
+export const noteTemplates = pgTable('note_templates', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  type: text('type').notNull().default('custom'),
+  content: text('content').notNull(),
+  isDefault: boolean('is_default').notNull().default(false),
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ---------------------------------------------------------------------------
+// Note Tags (join table)
+// ---------------------------------------------------------------------------
+export const noteTags = pgTable(
+  'note_tags',
+  {
+    noteId: uuid('note_id')
+      .notNull()
+      .references(() => notes.id, { onDelete: 'cascade' }),
+    tagId: uuid('tag_id')
+      .notNull()
+      .references(() => tags.id, { onDelete: 'cascade' }),
+  },
+  (t) => [primaryKey({ columns: [t.noteId, t.tagId] })],
+);
+
+// ---------------------------------------------------------------------------
 // Type exports
 // ---------------------------------------------------------------------------
 export type User = typeof users.$inferSelect;
@@ -149,7 +224,14 @@ export type Tag = typeof tags.$inferSelect;
 export type TaskTag = typeof taskTags.$inferSelect;
 export type InboxItem = typeof inboxItems.$inferSelect;
 
+export type Note = typeof notes.$inferSelect;
+export type NoteLink = typeof noteLinks.$inferSelect;
+export type NoteTemplate = typeof noteTemplates.$inferSelect;
+export type NoteTag = typeof noteTags.$inferSelect;
+
 export type NewTask = typeof tasks.$inferInsert;
 export type NewArea = typeof areas.$inferInsert;
 export type NewProject = typeof projects.$inferInsert;
 export type NewInboxItem = typeof inboxItems.$inferInsert;
+export type NewNote = typeof notes.$inferInsert;
+export type NewNoteTemplate = typeof noteTemplates.$inferInsert;
